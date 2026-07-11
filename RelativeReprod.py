@@ -346,15 +346,11 @@ if plotmultinomial:
     plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     plt.xticks(rotation=45)
     
-    # Strict Y boundaries since percentages can only live between 0% and 100%
+    # Strict Y boundaries
     plt.ylim(bottom=0, top=1) 
     
     plt.tight_layout()
     plt.show()
-
-# Example of how you can access the saved models later:
-# for item in regression_models:
-#     print(f"Model for {item['variant']}: {item['model']}")
 
 
 #-----------Relative Reproduction based model------#

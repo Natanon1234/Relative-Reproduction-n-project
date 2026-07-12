@@ -51,7 +51,7 @@ if(debug):
     values2=[]
     dates=[]
 
-    print("------------INPUT CSV FILE READING----------")
+    print("------------INPUT CSV FILE Reading----------")
 
     print("Variants found:")
     for variant in variant_cols:
@@ -151,68 +151,124 @@ if plotregressquad:
     plt.tight_layout() # Ensures the rotated dates and legend fit in the window
     plt.show()
 
+#--------------Multinomial Comparison (Linear vs Quadratic) -------# #Multinomial linear makes more sense, but apparently the quadratic work better?
+plot_multinomial_comparison = True
+days = 183
 
-plotmultinomial=True #Lets use this, since replacement involves an exclusive multinomial selection of terms between all variants
-days=183
-if plotmultinomial:
+if plot_multinomial_comparison:
     # Convert dates to ordinals and normalize
-    x_ord=np.array([d.toordinal() for d in xval])
-    x_min=x_ord.min()
-    x_norm=x_ord - x_min
+    x_ord = np.array([d.toordinal() for d in xval])
+    x_min = x_ord.min()
+    x_norm = x_ord - x_min
     
     # 1. Create the extended timeline (historical + days)
-    last_date=xval[-1]
-    future_dates=[last_date + dt.timedelta(days=i) for i in range(1, days)]
-    extended_x_dates=xval + future_dates
-    extended_x_norm=np.array([d.toordinal() - x_min for d in extended_x_dates])
+    last_date = xval[-1]
+    future_dates = [last_date + dt.timedelta(days=i) for i in range(1, days)]
+    extended_x_dates = xval + future_dates
+    extended_x_norm = np.array([d.toordinal() - x_min for d in extended_x_dates])
     
-    # We will temporarily store the unnormalized log-predictions
-    raw_log_predictions={}
+    # Dictionaries to store your separate coefficients
+    polynomial_coeffs = {}
+    linear_coeffs = {}
     
-    # 2. Fit a quadratic regression to the log-space of each variant
+    # Temporary storage for unnormalized log-predictions
+    raw_log_poly = {}
+    raw_log_linear = {}
+    
+    # 2. Fit both regressions in a single loop
     for name, y in zip(variant_cols.keys(), ploty):
-        # Use a small constant (1e-4) to safely handle 0% values without math errors
-        log_y=np.log(y + 1e-4)
+        log_y = np.log(y + 1e-4) # Safety constant for 0%
         
-        # Fit a simple quadratic (degree 2) polynomial
-        coeffs=np.polyfit(x_norm, log_y, 2)
+        # Polynomial (Quadratic - degree 2)
+        poly_fit = np.polyfit(x_norm, log_y, 2)
+        polynomial_coeffs[name] = poly_fit
+        raw_log_poly[name] = np.polyval(poly_fit, extended_x_norm)
         
-        # Save the coefficients for the list
-        regression_models.append({'variant': name, 'coefficients': coeffs})
+        # Linear (degree 1)
+        linear_fit = np.polyfit(x_norm, log_y, 1)
+        linear_coeffs[name] = linear_fit
+        raw_log_linear[name] = np.polyval(linear_fit, extended_x_norm)
+    
+    # 3. Reusable Softmax transformation function to prevent code duplication
+    def apply_softmax(raw_predictions):
+        all_preds = np.array(list(raw_predictions.values()))
+        max_preds = np.max(all_preds, axis=0) # Prevent exponent overflow
+        exp_preds = {name: np.exp(pred - max_preds) for name, pred in raw_predictions.items()}
+        total_exp = np.sum(list(exp_preds.values()), axis=0)
+        return {name: exp_preds[name] / total_exp for name in raw_predictions}
         
-        # Generate raw predictions across the entire extended timeline
-        raw_log_predictions[name]=np.polyval(coeffs, extended_x_norm)
+    final_poly = apply_softmax(raw_log_poly)
+    final_linear = apply_softmax(raw_log_linear)
     
-    # 3. Apply the Softmax transformation to make variants sum to 1.0
-    # First, find the maximum raw value at each time step to prevent exponent overflow
-    all_preds=np.array(list(raw_log_predictions.values()))
-    max_preds=np.max(all_preds, axis=0)
+    # 4. Plot Side-by-Side Comparison
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6), sharey=True)
     
-    # Calculate exponents
-    exp_predictions={name: np.exp(pred - max_preds) for name, pred in raw_log_predictions.items()}
-    total_exp_per_day=np.sum(list(exp_predictions.values()), axis=0)
-    
-    # 4. Plot the results
     for name, y in zip(variant_cols.keys(), ploty):
-        # Plot original historical scatter data
-        plt.scatter(xval, y, s=12, label=f"{name} (Data)")
+        # Scatter actual data on both plots (using alpha to keep it visually clean)
+        ax1.scatter(xval, y, s=12, alpha=0.4)
+        ax2.scatter(xval, y, s=12, alpha=0.4)
         
-        # Calculate the final normalized competitive proportion
-        final_extrapolated_y=exp_predictions[name] / total_exp_per_day
-        
-        # Plot smoothed competitive curve
-        plt.plot(extended_x_dates, final_extrapolated_y, linestyle='--', label=f"{name} (Model)")
+        # Plot models
+        ax1.plot(extended_x_dates, final_poly[name], linestyle='-', label=f"{name}")
+        ax2.plot(extended_x_dates, final_linear[name], linestyle='-', label=f"{name}")
 
-    # Move legend outside the plot
-    plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
-    plt.xticks(rotation=45)
+    # Format the Visuals
+    ax1.set_title("Multinomial Log-Quadratic Fit (Polynomial)")
+    ax2.set_title("Multinomial Log-Linear Fit")
     
-    # Strict Y boundaries
-    plt.ylim(bottom=0, top=1)
+    for ax in (ax1, ax2):
+        ax.set_ylim(bottom=0, top=1)
+        ax.tick_params(axis='x', rotation=45)
+        
+    # Single legend outside the second plot
+    ax2.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     
     plt.tight_layout()
     plt.show()
 
+    # 5. Output the separate coefficient lists for you to work with
+    print("\n" + "="*40)
+    print("POLYNOMIAL (QUADRATIC) COEFFICIENTS [a, b, c]")
+    print("="*40)
+    for variant, coeffs in polynomial_coeffs.items():
+        print(f"{variant:<15}: {coeffs}")
+        
+    print("\n" + "="*40)
+    print("LINEAR COEFFICIENTS [m, b]")
+    print("="*40)
+    for variant, coeffs in linear_coeffs.items():
+        print(f"{variant:<15}: {coeffs}")
+
+    # 6. Evaluate Models using Akaike Information Criterion (AIC)
+    print("\n" + "="*40)
+    print("MODEL EVALUATION (AIC)")
+    print("="*40)
+    
+    # Total data points = number of timepoints * number of variants
+    n_points = len(xval) * len(variant_cols)
+    
+    # Number of parameters (k): Linear has 2 per variant, Poly has 3 per variant
+    k_linear = 2 * len(variant_cols)
+    k_poly = 3 * len(variant_cols)
+    
+    rss_linear = 0
+    rss_poly = 0
+    
+    for name, y_actual in zip(variant_cols.keys(), ploty):
+        # Slice the extended predictions back to just the historical timeframe to match y_actual
+        y_pred_linear = final_linear[name][:len(xval)]
+        y_pred_poly = final_poly[name][:len(xval)]
+        
+        # Add to total Residual Sum of Squares
+        rss_linear += np.sum((y_actual - y_pred_linear)**2)
+        rss_poly += np.sum((y_actual - y_pred_poly)**2)
+        
+    # AIC Formula using RSS: n * ln(RSS/n) + 2k
+    aic_linear = n_points * np.log(rss_linear / n_points) + 2 * k_linear
+    aic_poly = n_points * np.log(rss_poly / n_points) + 2 * k_poly
+    
+    print(f"Linear Model AIC:     {aic_linear:.2f}")
+    print(f"Polynomial Model AIC: {aic_poly:.2f}")
 
 #-----------Relative Reproduction based model------#
 

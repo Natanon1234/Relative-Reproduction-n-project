@@ -224,6 +224,7 @@ if plot_multinomial_comparison:
     ax2.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     
     plt.tight_layout()
+    plt.savefig("variant_forecast.png", dpi=300, bbox_inches="tight")
     plt.show()
 
     # 5. Output the separate coefficient lists for you to work with

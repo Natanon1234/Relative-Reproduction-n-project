@@ -200,7 +200,7 @@ if plot_multinomial_comparison:
     final_poly = apply_softmax(raw_log_poly)
     final_linear = apply_softmax(raw_log_linear)
     
-    # 4. Plot Side-by-Side Comparison
+    # 4. Plot Comparison
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6), sharey=True)
     
     for name, y in zip(variant_cols.keys(), ploty):

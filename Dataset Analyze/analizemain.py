@@ -1,4 +1,4 @@
-# Pipeline note: Identify antigens --> Tupple of variant, count --> Plotting & Autosaving Graph Only
+# Pipeline note: Identify antigens --> Tupple of variant, count --> Plotting (Ab per Ag / Ag per Ab) as Bar Charts
 import pandas as pd
 import numpy as np
 import glob
@@ -64,7 +64,7 @@ synthetic_size = 50000
 synthetic_ab_counts = np.random.pareto(a=1.5, size=synthetic_size).astype(int) + 1
 synthetic_ag_counts = np.random.pareto(a=1.8, size=synthetic_size).astype(int) + 1
 
-# 3. True Random Sample Pairing (Uniform random shuffling / pairing from real sequences)
+# 3. True Random Sample Pairing
 print("Generating true random sample pairing...")
 unique_antigens = df['antigen_sequence'].dropna().unique()
 unique_heavy = df['heavy_sequence'].dropna().unique()
@@ -108,30 +108,33 @@ ag_freq_rand = ag_per_ab_rand['num_ag'].value_counts().sort_index()
 
 
 # ---------------------------------------------------------
-# PLOTTING SECTION & AUTOSAVE GRAPH ONLY
+# PLOTTING SECTION (BAR CHARTS) & AUTOSAVE GRAPH ONLY
 # ---------------------------------------------------------
 
-print("Generating and saving comparative plots with true random samples...")
+print("Generating and saving comparative bar charts...")
 
 plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-# --- Row 1: Antibodies per Antigen (Linear vs Log) ---
+# Width adjustments for overlapping bar charts visibility
+width = 0.6
+
+# --- Row 1: Antibodies per Antigen (Linear vs Log Bar Charts) ---
 # Linear Scale
-axes[0, 0].plot(ab_freq_bind.index, ab_freq_bind.values, marker='o', linestyle='-', linewidth=2, color='#1f77b4', label='Real Binders')
-axes[0, 0].plot(synth_ab_freq.index, synth_ab_freq.values, marker='.', linestyle='--', linewidth=1.5, color='#2ca02c', alpha=0.7, label='Synthetic')
-axes[0, 0].plot(ab_freq_rand.index, ab_freq_rand.values, marker='x', linestyle=':', linewidth=1.5, color='#9467bd', alpha=0.8, label='True Random')
-axes[0, 0].set_title('Ab per Antigen (Linear Scale)', fontsize=11, fontweight='bold')
+axes[0, 0].bar(ab_freq_bind.index, ab_freq_bind.values, width=width, color='#1f77b4', alpha=0.8, label='Real Binders')
+axes[0, 0].bar(synth_ab_freq.index, synth_ab_freq.values, width=width*0.7, color='#2ca02c', alpha=0.5, label='Synthetic')
+axes[0, 0].bar(ab_freq_rand.index, ab_freq_rand.values, width=width*0.4, color='#9467bd', alpha=0.5, label='True Random')
+axes[0, 0].set_title('Ab per Antigen (Linear Bar Chart)', fontsize=11, fontweight='bold')
 axes[0, 0].set_xlabel('Number of Associated Antibodies (Ab)')
 axes[0, 0].set_ylabel('Count')
 axes[0, 0].legend()
 axes[0, 0].grid(True, linestyle='--', alpha=0.5)
 
 # Log Scale
-axes[0, 1].plot(ab_freq_bind.index, ab_freq_bind.values, marker='o', linestyle='-', linewidth=2, color='#1f77b4', label='Real Binders')
-axes[0, 1].plot(synth_ab_freq.index, synth_ab_freq.values, marker='.', linestyle='--', linewidth=1.5, color='#2ca02c', alpha=0.7, label='Synthetic')
-axes[0, 1].plot(ab_freq_rand.index, ab_freq_rand.values, marker='x', linestyle=':', linewidth=1.5, color='#9467bd', alpha=0.8, label='True Random')
-axes[0, 1].set_title('Ab per Antigen (Log Scale)', fontsize=11, fontweight='bold')
+axes[0, 1].bar(ab_freq_bind.index, ab_freq_bind.values, width=width, color='#1f77b4', alpha=0.8, label='Real Binders')
+axes[0, 1].bar(synth_ab_freq.index, synth_ab_freq.values, width=width*0.7, color='#2ca02c', alpha=0.5, label='Synthetic')
+axes[0, 1].bar(ab_freq_rand.index, ab_freq_rand.values, width=width*0.4, color='#9467bd', alpha=0.5, label='True Random')
+axes[0, 1].set_title('Ab per Antigen (Log Scale Bar Chart)', fontsize=11, fontweight='bold')
 axes[0, 1].set_xlabel('Number of Associated Antibodies (Ab)')
 axes[0, 1].set_ylabel('Count (Log Scale)')
 axes[0, 1].set_yscale('log')
@@ -140,22 +143,22 @@ axes[0, 1].legend()
 axes[0, 1].grid(True, which="both", linestyle='--', alpha=0.5)
 
 
-# --- Row 2: Antigens per Antibody (Linear vs Log) ---
+# --- Row 2: Antigens per Antibody (Linear vs Log Bar Charts) ---
 # Linear Scale
-axes[1, 0].plot(ag_freq_bind.index, ag_freq_bind.values, marker='o', linestyle='-', linewidth=2, color='#ff7f0e', label='Real Binders')
-axes[1, 0].plot(synth_ag_freq.index, synth_ag_freq.values, marker='.', linestyle='--', linewidth=1.5, color='#d62728', alpha=0.7, label='Synthetic')
-axes[1, 0].plot(ag_freq_rand.index, ag_freq_rand.values, marker='x', linestyle=':', linewidth=1.5, color='#8c564b', alpha=0.8, label='True Random')
-axes[1, 0].set_title('Ag per Antibody (Linear Scale)', fontsize=11, fontweight='bold')
+axes[1, 0].bar(ag_freq_bind.index, ag_freq_bind.values, width=width, color='#ff7f0e', alpha=0.8, label='Real Binders')
+axes[1, 0].bar(synth_ag_freq.index, synth_ag_freq.values, width=width*0.7, color='#d62728', alpha=0.5, label='Synthetic')
+axes[1, 0].bar(ag_freq_rand.index, ag_freq_rand.values, width=width*0.4, color='#8c564b', alpha=0.5, label='True Random')
+axes[1, 0].set_title('Ag per Antibody (Linear Bar Chart)', fontsize=11, fontweight='bold')
 axes[1, 0].set_xlabel('Number of Associated Antigens (Ag)')
 axes[1, 0].set_ylabel('Count')
 axes[1, 0].legend()
 axes[1, 0].grid(True, linestyle='--', alpha=0.5)
 
 # Log Scale
-axes[1, 1].plot(ag_freq_bind.index, ag_freq_bind.values, marker='o', linestyle='-', linewidth=2, color='#ff7f0e', label='Real Binders')
-axes[1, 1].plot(synth_ag_freq.index, synth_ag_freq.values, marker='.', linestyle='--', linewidth=1.5, color='#d62728', alpha=0.7, label='Synthetic')
-axes[1, 1].plot(ag_freq_rand.index, ag_freq_rand.values, marker='x', linestyle=':', linewidth=1.5, color='#8c564b', alpha=0.8, label='True Random')
-axes[1, 1].set_title('Ag per Antibody (Log Scale)', fontsize=11, fontweight='bold')
+axes[1, 1].bar(ag_freq_bind.index, ag_freq_bind.values, width=width, color='#ff7f0e', alpha=0.8, label='Real Binders')
+axes[1, 1].bar(synth_ag_freq.index, synth_ag_freq.values, width=width*0.7, color='#d62728', alpha=0.5, label='Synthetic')
+axes[1, 1].bar(ag_freq_rand.index, ag_freq_rand.values, width=width*0.4, color='#8c564b', alpha=0.5, label='True Random')
+axes[1, 1].set_title('Ag per Antibody (Log Scale Bar Chart)', fontsize=11, fontweight='bold')
 axes[1, 1].set_xlabel('Number of Associated Antigens (Ag)')
 axes[1, 1].set_ylabel('Count (Log Scale)')
 axes[1, 1].set_yscale('log')
@@ -166,8 +169,8 @@ axes[1, 1].grid(True, which="both", linestyle='--', alpha=0.5)
 plt.tight_layout()
 
 # Autosave Figure Only
-figure_path = os.path.join(output_dir, 'ab_ag_distribution_comparison.png')
+figure_path = os.path.join(output_dir, 'ab_ag_distribution_comparison_bar.png')
 plt.savefig(figure_path, dpi=300)
-print(f"Graph successfully saved to: {figure_path}")
+print(f"Bar chart successfully saved to: {figure_path}")
 
 plt.show()

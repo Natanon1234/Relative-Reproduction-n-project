@@ -242,7 +242,7 @@ def plot_and_save_charts(db_name, freqs, output_dir):
 
   # --- 1. Bar Chart Generation ---
   print(
-      f"Generating and saving comparative bar charts for [{db_name}]..."
+      f"Generating and saving bar charts for [{db_name}]..."
   )
   fig, axes = plt.subplots(2, 2, figsize=(16, 12))
   width = 0.6
@@ -264,14 +264,13 @@ def plot_and_save_charts(db_name, freqs, output_dir):
       alpha=0.5,
       label="Synthetic",
   )
-  axes[0, 0].bar(
-      ab_freq_rand.index,
-      ab_freq_rand.values,
-      width=width * 0.4,
-      color="#9467bd",
-      alpha=0.5,
-      label="True Random",
-  )
+#   axes[0, 0].bar( ab_freq_rand.index,
+#       ab_freq_rand.values,
+#       width=width * 0.4,
+#       color="#9467bd",
+#       alpha=0.5,
+#       label="True Random",
+#   )
   axes[0, 0].set_title(
       f"[{db_name}] Ab per Antigen (Linear Bar Chart)",
       fontsize=11,
@@ -290,22 +289,22 @@ def plot_and_save_charts(db_name, freqs, output_dir):
       alpha=0.8,
       label=f"{db_name} Binders",
   )
-  axes[0, 1].bar(
-      synth_ab_freq.index,
-      synth_ab_freq.values,
-      width=width * 0.7,
-      color="#2ca02c",
-      alpha=0.5,
-      label="Synthetic",
-  )
-  axes[0, 1].bar(
-      ab_freq_rand.index,
-      ab_freq_rand.values,
-      width=width * 0.4,
-      color="#9467bd",
-      alpha=0.5,
-      label="True Random",
-  )
+#   axes[0, 1].bar(
+#       synth_ab_freq.index,
+#       synth_ab_freq.values,
+#       width=width * 0.7,
+#       color="#2ca02c",
+#       alpha=0.5,
+#       label="Synthetic",
+#   )
+#   axes[0, 1].bar(
+#       ab_freq_rand.index,
+#       ab_freq_rand.values,
+#       width=width * 0.4,
+#       color="#9467bd",
+#       alpha=0.5,
+#       label="True Random",
+#   )
   axes[0, 1].set_title(
       f"[{db_name}] Ab per Antigen (Log Scale Bar Chart)",
       fontsize=11,
@@ -604,3 +603,4 @@ if __name__ == "__main__":
     synth_ab, synth_ag, random_df = generate_controls(df)
     freqs = compute_frequencies(bindto_df, random_df, synth_ab, synth_ag)
     plot_and_save_charts(db_name, freqs, output_dir)
+print(bindto_df)

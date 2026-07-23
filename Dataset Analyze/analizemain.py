@@ -62,7 +62,6 @@ def load_dataset(folder_path, file_type, mapping):
 
 def preprocess_data(df, db_name, affinity_threshold):
   """Cleans data, validates required columns, forces numeric types, and filters binders."""
-  # Special mapping for AB-Bind column structures if generic mapping misses it
   if db_name == "abbind":
     df = df.rename(
         columns={
@@ -225,7 +224,7 @@ def compute_frequencies(
 
 
 def plot_and_save_charts(db_name, freqs, output_dir):
-  """Generates and autosaves the 2x2 comparison bar chart for a given dataset."""
+  """Generates and autosaves both 2x2 comparison line and bar charts for a given dataset."""
   (
       ab_freq_bind,
       ag_freq_bind,
@@ -235,17 +234,20 @@ def plot_and_save_charts(db_name, freqs, output_dir):
       ag_freq_rand,
   ) = freqs
 
-  print(f"Generating and saving comparative bar charts for [{db_name}]...")
-
   plt.style.use(
       "seaborn-v0_8-whitegrid"
       if "seaborn-v0_8-whitegrid" in plt.style.available
       else "default"
   )
+
+  # --- 1. Bar Chart Generation ---
+  print(
+      f"Generating and saving comparative bar charts for [{db_name}]..."
+  )
   fig, axes = plt.subplots(2, 2, figsize=(16, 12))
   width = 0.6
 
-  # --- Row 1: Antibodies per Antigen ---
+  # Row 1: Antibodies per Antigen (Bar)
   axes[0, 0].bar(
       ab_freq_bind.index,
       ab_freq_bind.values,
@@ -316,7 +318,7 @@ def plot_and_save_charts(db_name, freqs, output_dir):
   axes[0, 1].legend()
   axes[0, 1].grid(True, which="both", linestyle="--", alpha=0.5)
 
-  # --- Row 2: Antigens per Antibody ---
+  # Row 2: Antigens per Antibody (Bar)
   axes[1, 0].bar(
       ag_freq_bind.index,
       ag_freq_bind.values,
@@ -388,11 +390,167 @@ def plot_and_save_charts(db_name, freqs, output_dir):
   axes[1, 1].grid(True, which="both", linestyle="--", alpha=0.5)
 
   plt.tight_layout()
-  figure_path = os.path.join(
+  bar_figure_path = os.path.join(
       output_dir, f"{db_name}_ab_ag_distribution_comparison_bar.png"
   )
-  plt.savefig(figure_path, dpi=300)
-  print(f"Bar chart for [{db_name}] successfully saved to: {figure_path}")
+  plt.savefig(bar_figure_path, dpi=300)
+  print(f"Bar chart for [{db_name}] successfully saved to: {bar_figure_path}")
+  plt.close()
+
+  # --- 2. Line Chart Generation ---
+  print(
+      f"Generating and saving comparative line charts for [{db_name}]..."
+  )
+  fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+
+  # Row 1: Antibodies per Antigen (Line)
+  axes[0, 0].plot(
+      ab_freq_bind.index,
+      ab_freq_bind.values,
+      marker="o",
+      linewidth=2,
+      color="#1f77b4",
+      label=f"{db_name} Binders",
+  )
+  axes[0, 0].plot(
+      synth_ab_freq.index,
+      synth_ab_freq.values,
+      marker="s",
+      linewidth=2,
+      color="#2ca02c",
+      label="Synthetic",
+  )
+  axes[0, 0].plot(
+      ab_freq_rand.index,
+      ab_freq_rand.values,
+      marker="^",
+      linewidth=2,
+      color="#9467bd",
+      label="True Random",
+  )
+  axes[0, 0].set_title(
+      f"[{db_name}] Ab per Antigen (Linear Line Chart)",
+      fontsize=11,
+      fontweight="bold",
+  )
+  axes[0, 0].set_xlabel("Number of Associated Antibodies (Ab)")
+  axes[0, 0].set_ylabel("Count")
+  axes[0, 0].legend()
+  axes[0, 0].grid(True, linestyle="--", alpha=0.5)
+
+  axes[0, 1].plot(
+      ab_freq_bind.index,
+      ab_freq_bind.values,
+      marker="o",
+      linewidth=2,
+      color="#1f77b4",
+      label=f"{db_name} Binders",
+  )
+  axes[0, 1].plot(
+      synth_ab_freq.index,
+      synth_ab_freq.values,
+      marker="s",
+      linewidth=2,
+      color="#2ca02c",
+      label="Synthetic",
+  )
+  axes[0, 1].plot(
+      ab_freq_rand.index,
+      ab_freq_rand.values,
+      marker="^",
+      linewidth=2,
+      color="#9467bd",
+      label="True Random",
+  )
+  axes[0, 1].set_title(
+      f"[{db_name}] Ab per Antigen (Log Scale Line Chart)",
+      fontsize=11,
+      fontweight="bold",
+  )
+  axes[0, 1].set_xlabel("Number of Associated Antibodies (Ab)")
+  axes[0, 1].set_ylabel("Count (Log Scale)")
+  axes[0, 1].set_yscale("log")
+  axes[0, 1].set_xscale("log")
+  axes[0, 1].legend()
+  axes[0, 1].grid(True, which="both", linestyle="--", alpha=0.5)
+
+  # Row 2: Antigens per Antibody (Line)
+  axes[1, 0].plot(
+      ag_freq_bind.index,
+      ag_freq_bind.values,
+      marker="o",
+      linewidth=2,
+      color="#ff7f0e",
+      label=f"{db_name} Binders",
+  )
+  axes[1, 0].plot(
+      synth_ag_freq.index,
+      synth_ag_freq.values,
+      marker="s",
+      linewidth=2,
+      color="#d62728",
+      label="Synthetic",
+  )
+  axes[1, 0].plot(
+      ag_freq_rand.index,
+      ag_freq_rand.values,
+      marker="^",
+      linewidth=2,
+      color="#8c564b",
+      label="True Random",
+  )
+  axes[1, 0].set_title(
+      f"[{db_name}] Ag per Antibody (Linear Line Chart)",
+      fontsize=11,
+      fontweight="bold",
+  )
+  axes[1, 0].set_xlabel("Number of Associated Antigens (Ag)")
+  axes[1, 0].set_ylabel("Count")
+  axes[1, 0].legend()
+  axes[1, 0].grid(True, linestyle="--", alpha=0.5)
+
+  axes[1, 1].plot(
+      ag_freq_bind.index,
+      ag_freq_bind.values,
+      marker="o",
+      linewidth=2,
+      color="#ff7f0e",
+      label=f"{db_name} Binders",
+  )
+  axes[1, 1].plot(
+      synth_ag_freq.index,
+      synth_ag_freq.values,
+      marker="s",
+      linewidth=2,
+      color="#d62728",
+      label="Synthetic",
+  )
+  axes[1, 1].plot(
+      ag_freq_rand.index,
+      ag_freq_rand.values,
+      marker="^",
+      linewidth=2,
+      color="#8c564b",
+      label="True Random",
+  )
+  axes[1, 1].set_title(
+      f"[{db_name}] Ag per Antibody (Log Scale Line Chart)",
+      fontsize=11,
+      fontweight="bold",
+  )
+  axes[1, 1].set_xlabel("Number of Associated Antigens (Ag)")
+  axes[1, 1].set_ylabel("Count (Log Scale)")
+  axes[1, 1].set_yscale("log")
+  axes[1, 1].set_xscale("log")
+  axes[1, 1].legend()
+  axes[1, 1].grid(True, which="both", linestyle="--", alpha=0.5)
+
+  plt.tight_layout()
+  line_figure_path = os.path.join(
+      output_dir, f"{db_name}_ab_ag_distribution_comparison_line.png"
+  )
+  plt.savefig(line_figure_path, dpi=300)
+  print(f"Line chart for [{db_name}] successfully saved to: {line_figure_path}")
   plt.close()
 
 

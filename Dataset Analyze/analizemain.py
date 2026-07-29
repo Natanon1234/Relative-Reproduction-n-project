@@ -12,41 +12,44 @@ class Target:
     self.name = name
     self.count = 0
 
-
 def load_dataset(folder_path, file_type, mapping):
   """Loads dataset from parquet, csv, or structured files, applies column mapping, and returns a DataFrame."""
   print(f"Loading dataset from {folder_path}...")
   try:
     if file_type == "parquet":
       try:
+        # Tries to read the folder as a unified parquet dataset
         df = pd.read_parquet(folder_path, engine="pyarrow")
       except Exception:
+        # Fallback: Read ALL parquet files and concatenate
         parquet_files = glob.glob(f"{folder_path}/*.parquet")
-        df = (
-            pd.read_parquet(parquet_files[0], engine="pyarrow")
-            if parquet_files
-            else pd.DataFrame()
-        )
-    elif file_type == "csv":
-      if os.path.isdir(folder_path):
-        csv_files = glob.glob(f"{folder_path}/*.csv") + glob.glob(
-            f"{folder_path}/*.tsv"
-        )
-        target_file = csv_files[0] if csv_files else ""
-      else:
-        target_file = folder_path
+        if not parquet_files:
+          return pd.DataFrame()
+        
+        dfs = [pd.read_parquet(f, engine="pyarrow") for f in parquet_files]
+        df = pd.concat(dfs, ignore_index=True)
 
-      if target_file:
+    elif file_type == "csv":
+      dfs = []
+      if os.path.isdir(folder_path):
+        csv_files = glob.glob(f"{folder_path}/*.csv") + glob.glob(f"{folder_path}/*.tsv")
+      else:
+        csv_files = [folder_path]
+
+      for target_file in csv_files:
         sep = "\t" if target_file.endswith(".tsv") else ","
         try:
-          df = pd.read_csv(target_file, sep=sep, encoding="utf-8")
+          temp_df = pd.read_csv(target_file, sep=sep, encoding="utf-8")
         except UnicodeDecodeError:
-          print("UTF-8 decoding failed. Retrying with 'latin-1' encoding...")
-          df = pd.read_csv(target_file, sep=sep, encoding="latin-1")
-      else:
-        df = pd.DataFrame()
+          print(f"UTF-8 decoding failed for {target_file}. Retrying with 'latin-1' encoding...")
+          temp_df = pd.read_csv(target_file, sep=sep, encoding="latin-1")
+        dfs.append(temp_df)
+      
+      df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+      
     else:
       df = pd.DataFrame()
+      
   except Exception as e:
     print(f"Error loading dataset: {e}")
     return pd.DataFrame()
@@ -58,7 +61,6 @@ def load_dataset(folder_path, file_type, mapping):
     df = df.rename(columns=mapping)
 
   return df
-
 
 def preprocess_data(df, db_name, affinity_threshold):
   """Cleans data, validates required columns, forces numeric types, and filters binders."""
@@ -114,11 +116,9 @@ def preprocess_data(df, db_name, affinity_threshold):
     return pd.DataFrame(), pd.DataFrame()
 
   if "affinity_type" in df.columns:
-    bindto_df = df[
-        (df["affinity_type"] == "kd") & (df["affinity"] < affinity_threshold)
-    ].copy()
+    bindto_df = df.copy()
   else:
-    bindto_df = df[df["affinity"] < affinity_threshold].copy()
+    bindto_df = df.copy()
 
   return df, bindto_df
 
@@ -577,6 +577,9 @@ if __name__ == "__main__":
     print(f"==========================================")
 
     df = load_dataset(config["path"], config["type"], config["mapping"])
+    if db_name == "asd":
+        print(f"ASD columns loaded: {df.columns.tolist()}")
+        print(f"ASD row count before filtering: {len(df)}")
     if df.empty:
       print(f"Skipping {db_name}: Dataset path yielded no records.")
       continue
@@ -603,4 +606,5 @@ if __name__ == "__main__":
     synth_ab, synth_ag, random_df = generate_controls(df)
     freqs = compute_frequencies(bindto_df, random_df, synth_ab, synth_ag)
     plot_and_save_charts(db_name, freqs, output_dir)
-print(bindto_df)
+    print(df)
+    print(bindto_df)

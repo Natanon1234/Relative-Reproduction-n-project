@@ -1,2 +1,9 @@
 .DS_StoreDataset Analyze/datasets/asd/
 Dataset Analyze/datasets/asd/
+Dataset Analyze/.DS_Store
+Dataset Analyze/datasets/.DS_Store
+Dataset Analyze/output_results/.DS_Store
+Forecast RelRe/.DS_Store
+Forecast RelRe/test_venv/.DS_Store
+Forecast RelRe/test_venv/lib/.DS_Store
+Forecast RelRe/test_venv/lib/python3.10/.DS_Store
